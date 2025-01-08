@@ -1,0 +1,99 @@
+{
+    "name": "RSS to Slack",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 1
+                        }
+                    ]
+                }
+            },
+            "id": "1",
+            "name": "Schedule Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://feeds.feedburner.com/TechCrunch/",
+                "options": {}
+            },
+            "id": "2",
+            "name": "RSS Read",
+            "type": "n8n-nodes-base.rssFeedRead",
+            "typeVersion": 1.1,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "select": "channel",
+                "channelId": {
+                    "__rl": true,
+                    "value": "#general",
+                    "mode": "name"
+                },
+                "text": "=*{{ $json.title }}*\n{{ $json.link }}",
+                "otherOptions": {}
+            },
+            "id": "3",
+            "name": "Slack",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 2.2,
+            "position": [
+                720,
+                300
+            ],
+            "credentials": {
+                "slackApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Slack account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "RSS Read",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "RSS Read": {
+            "main": [
+                [
+                    {
+                        "node": "Slack",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": [
+        {
+            "name": "marketing"
+        }
+    ],
+    "notes": "Update the RSS Feed URL and Slack channel ID before activating. Add a deduplication node (e.g. 'Remove Duplicates') if you need to avoid re-posting items across runs."
+}
