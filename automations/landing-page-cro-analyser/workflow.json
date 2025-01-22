@@ -1,0 +1,138 @@
+{
+    "name": "Landing Page CRO Analyser",
+    "nodes": [
+        {
+            "id": "8aca34c2-65d6-432a-a7a5-fede59c3f4cb",
+            "name": "Landing Page Url",
+            "type": "n8n-nodes-base.formTrigger",
+            "position": [
+                -180,
+                0
+            ],
+            "parameters": {
+                "options": {},
+                "formTitle": "Conversion Rate Optimizer",
+                "formFields": {
+                    "values": [
+                        {
+                            "fieldLabel": "Landing Page Url",
+                            "placeholder": "https://yoursite.com/landing",
+                            "requiredField": true
+                        }
+                    ]
+                },
+                "formDescription": "Your Landing Page is Leaking Sales — Fix It Now"
+            },
+            "typeVersion": 2.2
+        },
+        {
+            "id": "61e17805-93aa-46a3-a5a1-36c02da6432a",
+            "name": "Scrape Website",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                20,
+                0
+            ],
+            "parameters": {
+                "url": "={{ $json['Landing Page Url'] }}",
+                "options": {}
+            },
+            "typeVersion": 4.2
+        },
+        {
+            "id": "cbe8bed2-37a0-4459-a34c-47b87c012875",
+            "name": "AI Agent",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                240,
+                0
+            ],
+            "parameters": {
+                "text": "=You are a professional expert in Conversion Rate Optimization who helps business founders & CMOs improve their landing pages.\n\nGOAL: Roast my landing page and deliver 10 specific CRO recommendations.\n\nROAST STRUCTURE:\n- Roast: A candid, human-style critique of what's wrong.\n- Recommendations: 10 highly specific, personalised CRO ideas — NOT generic advice. Give exact copy, layout, or psychology changes.\n\nHere is the content of my landing page: {{ $json.data }}",
+                "options": {},
+                "promptType": "define"
+            },
+            "typeVersion": 1.7
+        },
+        {
+            "id": "37786922-d64b-4e84-916e-1df8daeb0287",
+            "name": "OpenAI Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "position": [
+                200,
+                220
+            ],
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "o1",
+                    "cachedResultName": "o1"
+                },
+                "options": {
+                    "reasoningEffort": "high"
+                }
+            },
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenAI account"
+                }
+            },
+            "typeVersion": 1.2
+        }
+    ],
+    "active": false,
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "connections": {
+        "AI Agent": {
+            "main": [
+                []
+            ]
+        },
+        "Scrape Website": {
+            "main": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Landing Page Url": {
+            "main": [
+                [
+                    {
+                        "node": "Scrape Website",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "AI Agent",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "tags": [
+        {
+            "name": "ai"
+        },
+        {
+            "name": "marketing"
+        }
+    ]
+}
