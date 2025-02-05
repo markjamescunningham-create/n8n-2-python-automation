@@ -1,0 +1,281 @@
+{
+    "name": "LinkedIn AI Content Poster",
+    "nodes": [
+        {
+            "id": "7f5f9934-7ab8-43e9-a4cb-1583740a2e36",
+            "name": "Schedule Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "position": [
+                -840,
+                640
+            ],
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 6
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 1.2
+        },
+        {
+            "id": "928e2771-ec9f-48ff-b34e-9c3ab9c4a828",
+            "name": "Content topic generator",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                -500,
+                640
+            ],
+            "parameters": {
+                "text": "You are a Content Researcher Assistant. Generate high-value LinkedIn content topics covering: AI for Content Creation, LinkedIn Growth Strategies, Solopreneur Productivity, Systems Thinking for Personal Brands, Future of Work, and No-Code Tools.\n\nFor each topic output: Topic Title, Short Rationale (1-2 sentences), Suggested Hook (1 LinkedIn-style framing).",
+                "options": {},
+                "promptType": "define",
+                "hasOutputParser": true
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "10577345-0f96-42bf-a5db-7f9f205f7359",
+            "name": "OpenAI Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "position": [
+                -500,
+                880
+            ],
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gpt-4o-mini"
+                },
+                "options": {}
+            },
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenAI account"
+                }
+            },
+            "typeVersion": 1.2
+        },
+        {
+            "id": "84b30f40-e7fa-4c46-9a82-39bbd2becfe0",
+            "name": "Content creator",
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "position": [
+                -80,
+                640
+            ],
+            "parameters": {
+                "text": "=You are a LinkedIn content creator. Given the title {{ $json.output[0].title }} and rationale {{ $json.output[0].rationale }}, write a compelling LinkedIn post and describe a suitable realistic image.",
+                "batching": {},
+                "promptType": "define",
+                "hasOutputParser": true
+            },
+            "typeVersion": 1.7
+        },
+        {
+            "id": "6fdea8df-7cb4-4418-8dab-e5faa9e76b6b",
+            "name": "OpenAI Chat Model1",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+            "position": [
+                -80,
+                820
+            ],
+            "parameters": {
+                "model": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gpt-4o-mini"
+                },
+                "options": {}
+            },
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenAI account"
+                }
+            },
+            "typeVersion": 1.2
+        },
+        {
+            "id": "2ae88f2a-031c-41c3-bbb9-f1555d94863a",
+            "name": "OpenAI Image Generator",
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "position": [
+                420,
+                460
+            ],
+            "parameters": {
+                "prompt": "=Generate a realistic LinkedIn image: {{ $json.output['image description'] }}",
+                "options": {},
+                "resource": "image"
+            },
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenAI account"
+                }
+            },
+            "typeVersion": 1.8
+        },
+        {
+            "id": "f3901b98-cfe4-4d48-9e35-59161cbcfdd9",
+            "name": "Hashtag generator",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                420,
+                900
+            ],
+            "parameters": {
+                "text": "=Generate LinkedIn hashtags for this post. Include: 3-5 broad hashtags, 3-5 niche hashtags, 1-2 trending hashtags.\n\nPost title: {{ $json.output['post title'] }}\nPost content: {{ $json.output['post content'] }}\n\nReturn as a comma-separated list.",
+                "options": {},
+                "promptType": "define",
+                "hasOutputParser": true
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "f667d091-72aa-4bea-9648-4563a75265ff",
+            "name": "Merge",
+            "type": "n8n-nodes-base.merge",
+            "position": [
+                780,
+                640
+            ],
+            "parameters": {},
+            "typeVersion": 3.2
+        },
+        {
+            "id": "7c3a37b7-3227-43a7-86fb-c39e885570bf",
+            "name": "LinkedIn",
+            "type": "n8n-nodes-base.linkedIn",
+            "position": [
+                1060,
+                620
+            ],
+            "parameters": {
+                "postAs": "organization",
+                "additionalFields": {},
+                "shareMediaCategory": "IMAGE"
+            },
+            "credentials": {
+                "linkedInOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "LinkedIn account"
+                }
+            },
+            "typeVersion": 1
+        }
+    ],
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "connections": {
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Content topic generator",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Content topic generator": {
+            "main": [
+                [
+                    {
+                        "node": "Content creator",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Content creator": {
+            "main": [
+                [
+                    {
+                        "node": "OpenAI Image Generator",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Hashtag generator",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Image Generator": {
+            "main": [
+                [
+                    {
+                        "node": "Merge",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Hashtag generator": {
+            "main": [
+                [
+                    {
+                        "node": "Merge",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Merge": {
+            "main": [
+                [
+                    {
+                        "node": "LinkedIn",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Content topic generator",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenAI Chat Model1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Content creator",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "tags": [
+        {
+            "name": "marketing"
+        },
+        {
+            "name": "ai"
+        }
+    ]
+}
