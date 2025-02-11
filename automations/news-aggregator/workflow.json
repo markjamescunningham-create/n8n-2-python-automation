@@ -1,0 +1,1206 @@
+{
+    "name": "TEMPLATE - R1 - News Aggregators",
+    "tags": [
+        {
+            "name": "tech"
+        }
+    ],
+    "nodes": [
+        {
+            "id": "f21c126b-17a1-4884-99d6-eb213622a3a8",
+            "name": "CurrentsAPI",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "position": [
+                -112,
+                -752
+            ],
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "triggerAtHour": 6,
+                            "triggerAtMinute": 10
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 1.2
+        },
+        {
+            "id": "d1fe71c8-3d76-4319-b64d-84d1a41db0cf",
+            "name": "MediaStack",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "position": [
+                -112,
+                -448
+            ],
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "daysInterval": 2,
+                            "triggerAtHour": 6,
+                            "triggerAtMinute": 5
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 1.2
+        },
+        {
+            "id": "fb721491-850a-435d-bc6f-cffc384be9cc",
+            "name": "NewsAPI - Top Headlines",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "position": [
+                -112,
+                -96
+            ],
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "triggerAtHour": 6
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 1.2
+        },
+        {
+            "id": "59135f3b-5dc6-48c0-afef-22eb1dc8fd2a",
+            "name": "NewsAPI - Categories",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "position": [
+                -112,
+                272
+            ],
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "triggerAtHour": 6,
+                            "triggerAtMinute": 1
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 1.2
+        },
+        {
+            "id": "d4f5d1e5-aa88-45d5-b332-ce6da5421113",
+            "name": "currentsapi config",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                112,
+                -752
+            ],
+            "parameters": {
+                "options": {},
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "b7d968fd",
+                            "name": "article_limit",
+                            "type": "number",
+                            "value": 15
+                        },
+                        {
+                            "id": "01693aa5",
+                            "name": "category",
+                            "type": "string",
+                            "value": "latest-news"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 3.4
+        },
+        {
+            "id": "7ceea6b6-8940-4479-98b5-bddd19a08971",
+            "name": "mediastack categories",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                112,
+                -448
+            ],
+            "parameters": {
+                "options": {},
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "b7d968fd",
+                            "name": "article_limit",
+                            "type": "number",
+                            "value": 15
+                        },
+                        {
+                            "id": "01693aa5",
+                            "name": "categories",
+                            "type": "array",
+                            "value": "=[\"general\",\"business\",\"entertainment\",\"health\",\"science\",\"sports\",\"technology\"]"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 3.4
+        },
+        {
+            "id": "42a01918-e854-473c-bb02-a19addf6b182",
+            "name": "newsapi.org categories",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                112,
+                272
+            ],
+            "parameters": {
+                "options": {},
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "b7d968fd",
+                            "name": "article_limit",
+                            "type": "number",
+                            "value": 20
+                        },
+                        {
+                            "id": "01693aa5",
+                            "name": "categories",
+                            "type": "array",
+                            "value": "=[\"general\",\"business\",\"entertainment\",\"health\",\"science\",\"sports\",\"technology\"]"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 3.4
+        },
+        {
+            "id": "80a47f18-55bd-4b0c-9c7a-2b8594703c59",
+            "name": "call currentsapi",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                336,
+                -752
+            ],
+            "parameters": {
+                "url": "https://api.currentsapi.services/v1/latest-news",
+                "options": {},
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "apiKey",
+                            "value": "YOUR_CURRENTSAPI_KEY"
+                        },
+                        {
+                            "name": "language",
+                            "value": "en"
+                        },
+                        {
+                            "name": "limit",
+                            "value": "={{ $json.article_limit }}"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 4.2
+        },
+        {
+            "id": "1bb6f62b-b436-4261-8adf-39b47933d63c",
+            "name": "Split Out 3",
+            "type": "n8n-nodes-base.splitOut",
+            "position": [
+                560,
+                -752
+            ],
+            "parameters": {
+                "options": {},
+                "fieldToSplitOut": "news"
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "a62b3e53-94b6-4b40-b3e3-a169a2e911d4",
+            "name": "Set CurrentsAPI",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                784,
+                -752
+            ],
+            "parameters": {
+                "options": {},
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "ba68f2c6",
+                            "name": "aggregator",
+                            "type": "string",
+                            "value": "currentsapi"
+                        },
+                        {
+                            "id": "f501615f",
+                            "name": "title",
+                            "type": "string",
+                            "value": "={{ $json.title }}"
+                        },
+                        {
+                            "id": "c0d0a9bd",
+                            "name": "category",
+                            "type": "string",
+                            "value": "={{ $json.category[0] }}"
+                        },
+                        {
+                            "id": "ce7058c3",
+                            "name": "sources",
+                            "type": "string",
+                            "value": "={{ $json.url }}"
+                        },
+                        {
+                            "id": "dd23b241",
+                            "name": "summary",
+                            "type": "string",
+                            "value": "={{ $json.description }}"
+                        },
+                        {
+                            "id": "00b5db08",
+                            "name": "author",
+                            "type": "string",
+                            "value": "={{ $json.author }}"
+                        },
+                        {
+                            "id": "83cf7970",
+                            "name": "images",
+                            "type": "string",
+                            "value": "={{ $json.image }}"
+                        },
+                        {
+                            "id": "bfca41f2",
+                            "name": "publish_date",
+                            "type": "string",
+                            "value": "={{ $json.published }}"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 3.4
+        },
+        {
+            "id": "aaeabf45-a6a1-477f-8676-d561936df278",
+            "name": "Add CurrentsAPI item",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                1008,
+                -752
+            ],
+            "parameters": {
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldName": "source_category",
+                            "fieldValue": "={{ $('currentsapi config').item.json.category }}"
+                        },
+                        {
+                            "fieldName": "title",
+                            "fieldValue": "={{ $('Set CurrentsAPI').item.json.title }}"
+                        },
+                        {
+                            "fieldName": "status",
+                            "fieldValue": "new"
+                        },
+                        {
+                            "fieldName": "aggregator",
+                            "fieldValue": "={{ $('Set CurrentsAPI').item.json.aggregator }}"
+                        },
+                        {
+                            "fieldName": "publisher",
+                            "fieldValue": "={{ $('Set CurrentsAPI').item.json.author }}"
+                        },
+                        {
+                            "fieldName": "summary",
+                            "fieldValue": "={{ $('Set CurrentsAPI').item.json.summary }}"
+                        },
+                        {
+                            "fieldName": "sources",
+                            "fieldValue": "=[\"{{ $('Set CurrentsAPI').item.json.sources }}\"]},"
+                        },
+                        {
+                            "fieldName": "images",
+                            "fieldValue": "={{ $('Set CurrentsAPI').item.json.images }}"
+                        },
+                        {
+                            "fieldName": "publisher_date",
+                            "fieldValue": "={{ $('Set CurrentsAPI').item.json.publish_date }}"
+                        }
+                    ]
+                },
+                "operation": "create",
+                "authentication": "nocoDbApiToken"
+            },
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "NocoDB Token"
+                }
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "1fea3171-0131-44ed-a282-0fd54f4cbd1c",
+            "name": "Itemize Mediastack Categories",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                336,
+                -448
+            ],
+            "parameters": {
+                "jsCode": "const categories = $json.categories;\nif (!Array.isArray(categories)) throw new Error('categories must be an array');\nreturn categories.map(cat => ({ json: { category: cat } }));"
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "213dd999-12f5-4810-824b-b54397bef2e3",
+            "name": "Loop Over Mediastack",
+            "type": "n8n-nodes-base.splitInBatches",
+            "position": [
+                560,
+                -448
+            ],
+            "parameters": {
+                "options": {}
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "25102ea2-0ff0-446a-ad6a-b0ee85163444",
+            "name": "call mediastack",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                784,
+                -512
+            ],
+            "parameters": {
+                "url": "http://api.mediastack.com/v1/news",
+                "options": {},
+                "jsonQuery": "={\"access_key\": \"YOUR_MEDIASTACK_KEY\", \"categories\": \"{{ $json.category }}\", \"languages\": \"en\", \"sort\": \"published_desc\", \"limit\": {{ $('mediastack categories').item.json.article_limit }}}",
+                "sendQuery": true,
+                "specifyQuery": "json"
+            },
+            "typeVersion": 4.2
+        },
+        {
+            "id": "ce0e14d1-6b8b-42ed-927d-6e42e233dff8",
+            "name": "Split Out 2",
+            "type": "n8n-nodes-base.splitOut",
+            "position": [
+                1008,
+                -512
+            ],
+            "parameters": {
+                "include": "allOtherFields",
+                "options": {},
+                "fieldToSplitOut": "data"
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "99f45ce9-62bd-4549-bfb9-e04cc7ac2f47",
+            "name": "Set Mediastack",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                1232,
+                -512
+            ],
+            "parameters": {
+                "options": {},
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "f501615f",
+                            "name": "title",
+                            "type": "string",
+                            "value": "={{ $json.data.title }}"
+                        },
+                        {
+                            "id": "ba68f2c6",
+                            "name": "aggregator",
+                            "type": "string",
+                            "value": "mediastack"
+                        },
+                        {
+                            "id": "c0d0a9bd",
+                            "name": "category",
+                            "type": "string",
+                            "value": "={{ $json.data.category }}"
+                        },
+                        {
+                            "id": "29925006",
+                            "name": "publisher",
+                            "type": "string",
+                            "value": "={{ $json.data.source }}"
+                        },
+                        {
+                            "id": "dd23b241",
+                            "name": "summary",
+                            "type": "string",
+                            "value": "={{ $json.data.description }}"
+                        },
+                        {
+                            "id": "ce7058c3",
+                            "name": "sources",
+                            "type": "string",
+                            "value": "={{ $json.data.url }}"
+                        },
+                        {
+                            "id": "83cf7970",
+                            "name": "images",
+                            "type": "string",
+                            "value": "={{ $json.data.image }}"
+                        },
+                        {
+                            "id": "bfca41f2",
+                            "name": "publish_date",
+                            "type": "string",
+                            "value": "={{ $json.data.published_at }}"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 3.4
+        },
+        {
+            "id": "24eda8b0-fe47-4bc4-9c83-b4c51ecea3b0",
+            "name": "Add Mediastack item",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                1456,
+                -512
+            ],
+            "parameters": {
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldName": "source_category",
+                            "fieldValue": "={{ $('Set Mediastack').item.json.category }}"
+                        },
+                        {
+                            "fieldName": "title",
+                            "fieldValue": "={{ $('Set Mediastack').item.json.title }}"
+                        },
+                        {
+                            "fieldName": "status",
+                            "fieldValue": "new"
+                        },
+                        {
+                            "fieldName": "aggregator",
+                            "fieldValue": "={{ $('Set Mediastack').item.json.aggregator }}"
+                        },
+                        {
+                            "fieldName": "publisher",
+                            "fieldValue": "={{ $('Set Mediastack').item.json.publisher }}"
+                        },
+                        {
+                            "fieldName": "summary",
+                            "fieldValue": "={{ $('Set Mediastack').item.json.summary }}"
+                        },
+                        {
+                            "fieldName": "sources",
+                            "fieldValue": "=[\"{{ $('Set Mediastack').item.json.sources }}\"]},"
+                        },
+                        {
+                            "fieldName": "images",
+                            "fieldValue": "={{ $('Set Mediastack').item.json.images }}"
+                        },
+                        {
+                            "fieldName": "publisher_date",
+                            "fieldValue": "={{ $('Set Mediastack').item.json.publish_date }}"
+                        }
+                    ]
+                },
+                "operation": "create",
+                "authentication": "nocoDbApiToken"
+            },
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "NocoDB Token"
+                }
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "5654dacb-9871-4235-9eed-b3a2df8ba0a5",
+            "name": "Wait",
+            "type": "n8n-nodes-base.wait",
+            "position": [
+                1680,
+                -448
+            ],
+            "parameters": {},
+            "typeVersion": 1.1
+        },
+        {
+            "id": "dc4a81ed-a2d9-4031-a7fa-39c8ea47dc52",
+            "name": "call newsapi.org - Top Headlines",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                112,
+                -96
+            ],
+            "parameters": {
+                "url": "https://newsapi.org/v2/top-headlines?country=us&apiKey=YOUR_NEWSAPI_KEY",
+                "options": {}
+            },
+            "typeVersion": 4.2
+        },
+        {
+            "id": "3fad0499-f68c-4566-8f7b-a3ce4ff49a36",
+            "name": "Split Out 1",
+            "type": "n8n-nodes-base.splitOut",
+            "position": [
+                336,
+                -96
+            ],
+            "parameters": {
+                "options": {},
+                "fieldToSplitOut": "articles"
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "a6ecef60-aca4-4dab-bd0b-389b04d915a6",
+            "name": "Set Newsapi.org top headlines",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                560,
+                -96
+            ],
+            "parameters": {
+                "options": {},
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "ba68f2c6",
+                            "name": "aggregator",
+                            "type": "string",
+                            "value": "newsapi.org"
+                        },
+                        {
+                            "id": "98cd26a3",
+                            "name": "category",
+                            "type": "string",
+                            "value": "top headlines"
+                        },
+                        {
+                            "id": "f501615f",
+                            "name": "title",
+                            "type": "string",
+                            "value": "={{ $json.title }}"
+                        },
+                        {
+                            "id": "29925006",
+                            "name": "publisher",
+                            "type": "string",
+                            "value": "={{ $json.source.name }}"
+                        },
+                        {
+                            "id": "dd23b241",
+                            "name": "summary",
+                            "type": "string",
+                            "value": "={{ $json.description }}"
+                        },
+                        {
+                            "id": "00b5db08",
+                            "name": "author",
+                            "type": "string",
+                            "value": "={{ $json.author }}"
+                        },
+                        {
+                            "id": "ce7058c3",
+                            "name": "sources",
+                            "type": "string",
+                            "value": "={{ $json.url }}"
+                        },
+                        {
+                            "id": "83cf7970",
+                            "name": "images",
+                            "type": "string",
+                            "value": "={{ $json.urlToImage }}"
+                        },
+                        {
+                            "id": "bfca41f2",
+                            "name": "publish_date",
+                            "type": "string",
+                            "value": "={{ $json.publishedAt }}"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 3.4
+        },
+        {
+            "id": "6b038163-deec-4d0b-b589-5ee70ec2dacd",
+            "name": "Add NewsAPI item",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                784,
+                -96
+            ],
+            "parameters": {
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldName": "source_category",
+                            "fieldValue": "={{ $json.category }}"
+                        },
+                        {
+                            "fieldName": "title",
+                            "fieldValue": "={{ $('Set Newsapi.org top headlines').item.json.title }}"
+                        },
+                        {
+                            "fieldName": "status",
+                            "fieldValue": "new"
+                        },
+                        {
+                            "fieldName": "aggregator",
+                            "fieldValue": "={{ $('Set Newsapi.org top headlines').item.json.aggregator }}"
+                        },
+                        {
+                            "fieldName": "publisher",
+                            "fieldValue": "={{ $('Set Newsapi.org top headlines').item.json.publisher }}"
+                        },
+                        {
+                            "fieldName": "summary",
+                            "fieldValue": "={{ $('Set Newsapi.org top headlines').item.json.summary }}"
+                        },
+                        {
+                            "fieldName": "sources",
+                            "fieldValue": "=[\"{{ $('Set Newsapi.org top headlines').item.json.sources }}\"]},"
+                        },
+                        {
+                            "fieldName": "images",
+                            "fieldValue": "={{ $('Set Newsapi.org top headlines').item.json.images }}"
+                        },
+                        {
+                            "fieldName": "publisher_date",
+                            "fieldValue": "={{ $('Set Newsapi.org top headlines').item.json.publish_date }}"
+                        }
+                    ]
+                },
+                "operation": "create",
+                "authentication": "nocoDbApiToken"
+            },
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "NocoDB Token"
+                }
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "296dd63c-442b-4bee-9920-988fd510a899",
+            "name": "Itemize Newsapi Categories",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                336,
+                272
+            ],
+            "parameters": {
+                "jsCode": "const categories = $json.categories;\nif (!Array.isArray(categories)) throw new Error('categories must be an array');\nreturn categories.map(cat => ({ json: { category: cat } }));"
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "217c347d-1e29-41fb-8ea0-428ce66897cc",
+            "name": "Loop Over NewsAPI",
+            "type": "n8n-nodes-base.splitInBatches",
+            "position": [
+                560,
+                272
+            ],
+            "parameters": {
+                "options": {}
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "19430d07-0532-4461-a247-0a05fdb33762",
+            "name": "call newsapi.org - categories",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                784,
+                208
+            ],
+            "parameters": {
+                "url": "=https://newsapi.org/v2/top-headlines?category={{ $json.category }}&apiKey=YOUR_NEWSAPI_KEY",
+                "options": {}
+            },
+            "typeVersion": 4.2
+        },
+        {
+            "id": "9d5c0c75-81b4-4c45-8a6d-dc57397f672b",
+            "name": "Split Out ",
+            "type": "n8n-nodes-base.splitOut",
+            "position": [
+                1008,
+                208
+            ],
+            "parameters": {
+                "options": {},
+                "fieldToSplitOut": "articles"
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "db2ef4b7-45b5-440b-a564-85cb80750880",
+            "name": "Set Newsapi.org categories",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                1232,
+                208
+            ],
+            "parameters": {
+                "options": {},
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "ba68f2c6",
+                            "name": "aggregator",
+                            "type": "string",
+                            "value": "newsapi.org"
+                        },
+                        {
+                            "id": "f501615f",
+                            "name": "title",
+                            "type": "string",
+                            "value": "={{ $json.title }}"
+                        },
+                        {
+                            "id": "29925006",
+                            "name": "publisher",
+                            "type": "string",
+                            "value": "={{ $json.source.name }}"
+                        },
+                        {
+                            "id": "6eeebd18",
+                            "name": "category",
+                            "type": "string",
+                            "value": "={{ $('Itemize Newsapi Categories').item.json.category }}"
+                        },
+                        {
+                            "id": "dd23b241",
+                            "name": "summary",
+                            "type": "string",
+                            "value": "={{ $json.description }}"
+                        },
+                        {
+                            "id": "00b5db08",
+                            "name": "author",
+                            "type": "string",
+                            "value": "={{ $json.author }}"
+                        },
+                        {
+                            "id": "ce7058c3",
+                            "name": "sources",
+                            "type": "string",
+                            "value": "={{ $json.url }}"
+                        },
+                        {
+                            "id": "83cf7970",
+                            "name": "images",
+                            "type": "string",
+                            "value": "={{ $json.urlToImage }}"
+                        },
+                        {
+                            "id": "bfca41f2",
+                            "name": "publish_date",
+                            "type": "string",
+                            "value": "={{ $json.publishedAt }}"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 3.4
+        },
+        {
+            "id": "d113ee33-a001-44e3-b425-51502f5b87c8",
+            "name": "Add NewsAPI item1",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                1456,
+                208
+            ],
+            "parameters": {
+                "fieldsUi": {
+                    "fieldValues": [
+                        {
+                            "fieldName": "source_category",
+                            "fieldValue": "={{ $('Itemize Newsapi Categories').item.json.category }}"
+                        },
+                        {
+                            "fieldName": "title",
+                            "fieldValue": "={{ $('Set Newsapi.org categories').item.json.title }}"
+                        },
+                        {
+                            "fieldName": "status",
+                            "fieldValue": "new"
+                        },
+                        {
+                            "fieldName": "aggregator",
+                            "fieldValue": "={{ $('Set Newsapi.org categories').item.json.aggregator }}"
+                        },
+                        {
+                            "fieldName": "publisher",
+                            "fieldValue": "={{ $('Set Newsapi.org categories').item.json.publisher }}"
+                        },
+                        {
+                            "fieldName": "summary",
+                            "fieldValue": "={{ $('Set Newsapi.org categories').item.json.summary }}"
+                        },
+                        {
+                            "fieldName": "sources",
+                            "fieldValue": "=[\"{{ $('Set Newsapi.org categories').item.json.sources }}\"]},"
+                        },
+                        {
+                            "fieldName": "images",
+                            "fieldValue": "={{ $('Set Newsapi.org categories').item.json.images }}"
+                        },
+                        {
+                            "fieldName": "publisher_date",
+                            "fieldValue": "={{ $('Set Newsapi.org categories').item.json.publish_date }}"
+                        }
+                    ]
+                },
+                "operation": "create",
+                "authentication": "nocoDbApiToken"
+            },
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "NocoDB Token"
+                }
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "d98f5e3d-6e47-4aa8-8edf-63086422280d",
+            "name": "Wait1",
+            "type": "n8n-nodes-base.wait",
+            "position": [
+                1680,
+                272
+            ],
+            "parameters": {},
+            "typeVersion": 1.1
+        }
+    ],
+    "active": false,
+    "settings": {
+        "executionOrder": "v1",
+        "saveExecutionProgress": true
+    },
+    "connections": {
+        "CurrentsAPI": {
+            "main": [
+                [
+                    {
+                        "node": "currentsapi config",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "MediaStack": {
+            "main": [
+                [
+                    {
+                        "node": "mediastack categories",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "NewsAPI - Top Headlines": {
+            "main": [
+                [
+                    {
+                        "node": "call newsapi.org - Top Headlines",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "NewsAPI - Categories": {
+            "main": [
+                [
+                    {
+                        "node": "newsapi.org categories",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "currentsapi config": {
+            "main": [
+                [
+                    {
+                        "node": "call currentsapi",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "call currentsapi": {
+            "main": [
+                [
+                    {
+                        "node": "Split Out 3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Split Out 3": {
+            "main": [
+                [
+                    {
+                        "node": "Set CurrentsAPI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set CurrentsAPI": {
+            "main": [
+                [
+                    {
+                        "node": "Add CurrentsAPI item",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "mediastack categories": {
+            "main": [
+                [
+                    {
+                        "node": "Itemize Mediastack Categories",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Itemize Mediastack Categories": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Mediastack",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Over Mediastack": {
+            "main": [
+                [],
+                [
+                    {
+                        "node": "call mediastack",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "call mediastack": {
+            "main": [
+                [
+                    {
+                        "node": "Split Out 2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Split Out 2": {
+            "main": [
+                [
+                    {
+                        "node": "Set Mediastack",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Mediastack": {
+            "main": [
+                [
+                    {
+                        "node": "Add Mediastack item",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Add Mediastack item": {
+            "main": [
+                [
+                    {
+                        "node": "Wait",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wait": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Mediastack",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "call newsapi.org - Top Headlines": {
+            "main": [
+                [
+                    {
+                        "node": "Split Out 1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Split Out 1": {
+            "main": [
+                [
+                    {
+                        "node": "Set Newsapi.org top headlines",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Newsapi.org top headlines": {
+            "main": [
+                [
+                    {
+                        "node": "Add NewsAPI item",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "newsapi.org categories": {
+            "main": [
+                [
+                    {
+                        "node": "Itemize Newsapi Categories",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Itemize Newsapi Categories": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over NewsAPI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Over NewsAPI": {
+            "main": [
+                [],
+                [
+                    {
+                        "node": "call newsapi.org - categories",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "call newsapi.org - categories": {
+            "main": [
+                [
+                    {
+                        "node": "Split Out ",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "Split Out ": {
+            "main": [
+                [
+                    {
+                        "node": "Set Newsapi.org categories",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Newsapi.org categories": {
+            "main": [
+                [
+                    {
+                        "node": "Add NewsAPI item1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Add NewsAPI item1": {
+            "main": [
+                [
+                    {
+                        "node": "Wait1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wait1": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over NewsAPI",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
