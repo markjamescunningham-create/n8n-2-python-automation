@@ -1,0 +1,741 @@
+{
+    "name": "FB Ad AI Analyser",
+    "nodes": [
+        {
+            "id": "ce48c496-4d57-41c3-992e-046c1da7d6f6",
+            "name": "When clicking 'Test workflow'",
+            "type": "n8n-nodes-base.manualTrigger",
+            "position": [
+                -3184,
+                768
+            ],
+            "parameters": {},
+            "typeVersion": 1
+        },
+        {
+            "id": "7b2463ab-0eac-4bd5-8185-744ea231ef1d",
+            "name": "Getting Long-Term Token",
+            "type": "n8n-nodes-base.nocoDb",
+            "position": [
+                -2928,
+                768
+            ],
+            "parameters": {
+                "table": "YOUR_TABLE_ID",
+                "options": {},
+                "operation": "getAll",
+                "projectId": "YOUR_PROJECT_ID",
+                "authentication": "nocoDbApiToken"
+            },
+            "credentials": {
+                "nocoDbApiToken": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "NocoDB Token"
+                }
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "e0d95e0a-4cc2-42a7-9f6d-337bb1dc68b9",
+            "name": "Does it Need A Token Refresh?",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                -2704,
+                768
+            ],
+            "parameters": {
+                "jsCode": "const tokenData = $input.first()?.json || {};\nconst now = new Date().getTime();\nconst endDate = new Date(tokenData.end_date).getTime();\nconst threeDaysInMs = 3 * 24 * 60 * 60 * 1000;\nconst timeToExpiry = endDate - now;\nconst needsRefresh = timeToExpiry > 0 && timeToExpiry <= threeDaysInMs;\nreturn [{ json: { needs_refresh: needsRefresh, expires_at: tokenData.end_date } }];"
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "21dcc80e-ac2f-40ce-9890-6c8ba2ee463c",
+            "name": "Does Token Needs Refreshing?",
+            "type": "n8n-nodes-base.if",
+            "position": [
+                -2464,
+                768
+            ],
+            "parameters": {
+                "options": {},
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "73f5e309",
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "true",
+                                "singleValue": true
+                            },
+                            "leftValue": "={{ $json.needs_refresh }}",
+                            "rightValue": "true"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 2.2
+        },
+        {
+            "id": "5f27af56-537f-42f3-9c11-52189918c631",
+            "name": "Getting Long-Lived Access Token1",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                -2240,
+                704
+            ],
+            "parameters": {
+                "url": "https://graph.facebook.com/v22.0/oauth/access_token",
+                "method": "POST",
+                "options": {},
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "grant_type",
+                            "value": "fb_exchange_token"
+                        },
+                        {
+                            "name": "client_id",
+                            "value": "YOUR_FB_APP_ID"
+                        },
+                        {
+                            "name": "client_secret",
+                            "value": "YOUR_FB_APP_SECRET"
+                        },
+                        {
+                            "name": "fb_exchange_token",
+                            "value": "={{ $('Getting Long-Term Token').item.json.longTermAccessToken }}"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 4.2
+        },
+        {
+            "id": "fe5643c3-3012-4573-84b7-d11c93261bee",
+            "name": "Getting Long-Term Token1",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                -1872,
+                976
+            ],
+            "parameters": {
+                "options": {},
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "f3604846",
+                            "name": "longAccessToken",
+                            "type": "string",
+                            "value": "={{ $('Getting Long-Term Token').item.json.longTermAccessToken }}"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 3.4
+        },
+        {
+            "id": "dbc2be05-df91-463b-bd18-d935809393a1",
+            "name": "Extracting Access Token",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                -1360,
+                800
+            ],
+            "parameters": {
+                "options": {},
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "a6e2f5e6",
+                            "name": "accessToken",
+                            "type": "string",
+                            "value": "={{ $json.longAccessToken }}"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 3.4
+        },
+        {
+            "id": "b2f42335-8b1e-4d00-a9a8-f7f631f1927d",
+            "name": "Getting Data For the Past 28 Days",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                -1120,
+                528
+            ],
+            "parameters": {
+                "url": "=https://graph.facebook.com/v22.0/act_YOUR_AD_ACCOUNT_ID/insights",
+                "options": {},
+                "sendQuery": true,
+                "sendHeaders": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "level",
+                            "value": "ad"
+                        },
+                        {
+                            "name": "fields",
+                            "value": "campaign_name,adset_name,ad_name,ad_id,objective,spend,impressions,clicks,actions,action_values,date_start,date_stop"
+                        },
+                        {
+                            "name": "date_preset",
+                            "value": "last_28d"
+                        },
+                        {
+                            "name": "limit",
+                            "value": "500"
+                        }
+                    ]
+                },
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $json.accessToken }}"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 4.2
+        },
+        {
+            "id": "ce1cff8f-e076-4ec5-9a86-58db01605894",
+            "name": "Splitting Out In Table Format",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                -896,
+                528
+            ],
+            "parameters": {
+                "jsCode": "const allN8NInputItems = $input.all();\nconst finalOutputItems = [];\nconst ATC_TYPES = ['omni_add_to_cart','offsite_conversion.fb_pixel_add_to_cart'];\nconst CHECKOUT_TYPES = ['omni_initiated_checkout','offsite_conversion.fb_pixel_initiate_checkout'];\nconst PURCHASE_TYPES = ['omni_purchase','offsite_conversion.fb_pixel_purchase','purchase'];\nfunction getCount(actions, types) { if (!actions) return 0; for (const t of types) { const a = actions.find(x => x.action_type === t); if (a) return parseInt(a.value || 0); } return 0; }\nfunction getValue(actionValues, types) { if (!actionValues) return 0; for (const t of types) { const a = actionValues.find(x => x.action_type === t); if (a) return parseFloat(a.value || 0); } return 0; }\nfor (const n8nItem of allN8NInputItems) { const data = n8nItem.json.data || []; for (const fbData of data) { finalOutputItems.push({ json: { ad_id: fbData.ad_id, ad_name: fbData.ad_name, campaign_name: fbData.campaign_name, objective: fbData.objective, spend: parseFloat(fbData.spend || 0), impressions: parseInt(fbData.impressions || 0), clicks: parseInt(fbData.clicks || 0), add_to_carts_count: getCount(fbData.actions, ATC_TYPES), checkouts_initiated_count: getCount(fbData.actions, CHECKOUT_TYPES), purchases_count: getCount(fbData.actions, PURCHASE_TYPES), purchase_value_total: getValue(fbData.action_values, PURCHASE_TYPES) } }); } }\nreturn finalOutputItems;"
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "2fdd3e2f-92fa-4034-841a-500dad9f91bc",
+            "name": "Filtering Only For Sales Campaigns",
+            "type": "n8n-nodes-base.filter",
+            "position": [
+                -704,
+                528
+            ],
+            "parameters": {
+                "options": {},
+                "conditions": {
+                    "options": {
+                        "version": 2,
+                        "caseSensitive": true,
+                        "typeValidation": "strict"
+                    },
+                    "combinator": "and",
+                    "conditions": [
+                        {
+                            "id": "7e4103af",
+                            "operator": {
+                                "name": "filter.operator.equals",
+                                "type": "string",
+                                "operation": "equals"
+                            },
+                            "leftValue": "={{ $json.objective }}",
+                            "rightValue": "OUTCOME_SALES"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 2.2
+        },
+        {
+            "id": "cf388ebd-dff0-4658-b13a-59619c8cf701",
+            "name": "Aggregate Metrics by Ad Creative",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                -496,
+                448
+            ],
+            "parameters": {
+                "jsCode": "const allInputItems = $input.all();\nconst agg = {};\nfor (const n8nItem of allInputItems) { const d = n8nItem.json; const key = d.ad_name; if (!agg[key]) { agg[key] = { ad_name: d.ad_name, ad_id: d.ad_id, objective: d.objective, total_spend: 0, total_impressions: 0, total_clicks: 0, total_add_to_carts: 0, total_checkouts_initiated: 0, total_purchases: 0, total_purchase_value: 0 }; } agg[key].total_spend += d.spend; agg[key].total_impressions += d.impressions; agg[key].total_clicks += d.clicks; agg[key].total_add_to_carts += d.add_to_carts_count; agg[key].total_checkouts_initiated += d.checkouts_initiated_count; agg[key].total_purchases += d.purchases_count; agg[key].total_purchase_value += d.purchase_value_total; }\nconst out = [];\nfor (const key in agg) { const a = agg[key]; a.roas = a.total_spend > 0 ? parseFloat((a.total_purchase_value / a.total_spend).toFixed(2)) : 0; a.cost_per_purchase = a.total_purchases > 0 ? parseFloat((a.total_spend / a.total_purchases).toFixed(2)) : 0; a.conversion_rate = a.total_clicks > 0 ? (a.total_purchases / a.total_clicks * 100).toFixed(2) + '%' : '0%'; a.total_spend = parseFloat(a.total_spend.toFixed(2)); out.push({ json: a }); }\nreturn out;"
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "83a6b0a8-8422-4705-9576-deca22f7f092",
+            "name": "Sorting Based on Spends",
+            "type": "n8n-nodes-base.sort",
+            "position": [
+                -304,
+                448
+            ],
+            "parameters": {
+                "options": {},
+                "sortFieldsUi": {
+                    "sortField": [
+                        {
+                            "order": "descending",
+                            "fieldName": "total_spend"
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "89a2936e-7719-4cd8-8638-7db0d13e1a3f",
+            "name": "Stringify Everything",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                -96,
+                448
+            ],
+            "parameters": {
+                "jsCode": "const jsonString = JSON.stringify($input.all().map(i => i.json), null, 2);\nreturn [{ json: { all_ads_data_string: jsonString } }];"
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "2eaabe3c-fec3-4804-8f2b-db39a00cb0c4",
+            "name": "Calculate Account Benchmarks",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                -464,
+                784
+            ],
+            "parameters": {
+                "jsCode": "const records = $input.all();\nconst totals = { spend: 0, impressions: 0, clicks: 0, purchases: 0, purchase_value: 0 };\nfor (const n of records) { totals.spend += n.json.spend || 0; totals.impressions += n.json.impressions || 0; totals.clicks += n.json.clicks || 0; totals.purchases += n.json.purchases_count || 0; totals.purchase_value += n.json.purchase_value_total || 0; }\nconst kpis = { ...totals, roas: totals.spend > 0 ? parseFloat((totals.purchase_value / totals.spend).toFixed(2)) : 0, cost_per_purchase: totals.purchases > 0 ? parseFloat((totals.spend / totals.purchases).toFixed(2)) : 0, conversion_rate: totals.clicks > 0 ? (totals.purchases / totals.clicks * 100).toFixed(2) + '%' : '0%' };\nreturn [{ json: kpis }];"
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "23411043-d16f-40f4-8fcc-3c6653f3595c",
+            "name": "Stringify Benchmark Data",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                -48,
+                784
+            ],
+            "parameters": {
+                "jsCode": "const jsonString = JSON.stringify($input.all().map(i => i.json), null, 2);\nreturn [{ json: { benchmarkData: jsonString } }];"
+            },
+            "typeVersion": 2
+        },
+        {
+            "id": "6256c78d-67fb-4bc1-afb9-07b6191e254d",
+            "name": "Combining Ad Data and Benchmarking Data",
+            "type": "n8n-nodes-base.merge",
+            "position": [
+                224,
+                512
+            ],
+            "parameters": {},
+            "typeVersion": 3.1
+        },
+        {
+            "id": "3b80f5a8-4aa8-4a65-882b-ebc391da066c",
+            "name": "Combine Ad & Benchmark Data for LLM",
+            "type": "n8n-nodes-base.aggregate",
+            "position": [
+                400,
+                512
+            ],
+            "parameters": {
+                "options": {},
+                "aggregate": "aggregateAllItemData"
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "2dfd3d0c-0988-42df-8dfc-c545188d4ea2",
+            "name": "Senior Facebook Ads Media Buyer",
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "position": [
+                608,
+                528
+            ],
+            "parameters": {
+                "text": "=You are a Senior Facebook Ads Media Buyer. Categorise each ad as: HELL YES, YES, MAYBE, NOT REALLY, WE WASTED MONEY, or INSUFFICIENT DATA/SPEND.\n\nRules:\n- Spend < $50: INSUFFICIENT DATA/SPEND (at best)\n- Spend >= $100 required for YES or HELL YES\n- Compare ROAS, Cost Per Purchase, Conversion Rate against benchmark\n\nReturn a JSON array. Each item: { ad_id, ad_name, performance_category, justification, recommendation }\n\nAd Data: {{ $json.data[0].all_ads_data_string }}\nBenchmark: {{ $json.data[1].benchmarkData }}",
+                "promptType": "define",
+                "hasOutputParser": true
+            },
+            "typeVersion": 1.6
+        },
+        {
+            "id": "48d96bc5-b537-4fb0-9f09-e8c75f57a1c2",
+            "name": "Google Gemini Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "position": [
+                560,
+                720
+            ],
+            "parameters": {
+                "options": {},
+                "modelName": "models/gemini-2.0-flash"
+            },
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Gemini"
+                }
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "733a2556-a9d9-4892-9acb-6fcdb32a326e",
+            "name": "Split Out",
+            "type": "n8n-nodes-base.splitOut",
+            "position": [
+                944,
+                528
+            ],
+            "parameters": {
+                "options": {},
+                "fieldToSplitOut": "output"
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "aa9a05cc-532f-4f6f-844b-5511178b1722",
+            "name": "Sending Raw Data To A Google Sheet",
+            "type": "n8n-nodes-base.googleSheets",
+            "position": [
+                272,
+                -16
+            ],
+            "parameters": {
+                "operation": "appendOrUpdate",
+                "sheetName": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gid=0",
+                    "cachedResultName": "Sheet1"
+                },
+                "documentId": {
+                    "__rl": true,
+                    "mode": "url",
+                    "value": "YOUR_SPREADSHEET_ID"
+                }
+            },
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets"
+                }
+            },
+            "typeVersion": 4.5
+        },
+        {
+            "id": "fdb93589-5381-4dfc-a0ec-7dbd01b2bc64",
+            "name": "Updating Ad Insights Into Google Sheets",
+            "type": "n8n-nodes-base.googleSheets",
+            "position": [
+                1184,
+                528
+            ],
+            "parameters": {
+                "columns": {
+                    "value": {
+                        "ad_id": "={{ $json.ad_id }}",
+                        "Justification": "={{ $json.justification }}",
+                        "Recommendation": "={{ $json.recommendation }}",
+                        "Best Performing Ad": "={{ $json.performance_category }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "ad_id",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "ad_id",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        }
+                    ],
+                    "mappingMode": "defineBelow",
+                    "matchingColumns": [
+                        "ad_id"
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {},
+                "operation": "update",
+                "sheetName": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gid=0",
+                    "cachedResultName": "Sheet1"
+                },
+                "documentId": {
+                    "__rl": true,
+                    "mode": "url",
+                    "value": "YOUR_SPREADSHEET_ID"
+                }
+            },
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets"
+                }
+            },
+            "typeVersion": 4.5
+        }
+    ],
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "connections": {
+        "When clicking 'Test workflow'": {
+            "main": [
+                [
+                    {
+                        "node": "Getting Long-Term Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Getting Long-Term Token": {
+            "main": [
+                [
+                    {
+                        "node": "Does it Need A Token Refresh?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Does it Need A Token Refresh?": {
+            "main": [
+                [
+                    {
+                        "node": "Does Token Needs Refreshing?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Does Token Needs Refreshing?": {
+            "main": [
+                [
+                    {
+                        "node": "Getting Long-Lived Access Token1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Getting Long-Term Token1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Getting Long-Lived Access Token1": {
+            "main": [
+                [
+                    {
+                        "node": "Extracting Access Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Getting Long-Term Token1": {
+            "main": [
+                [
+                    {
+                        "node": "Extracting Access Token",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extracting Access Token": {
+            "main": [
+                [
+                    {
+                        "node": "Getting Data For the Past 28 Days",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Getting Data For the Past 28 Days": {
+            "main": [
+                [
+                    {
+                        "node": "Splitting Out In Table Format",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Splitting Out In Table Format": {
+            "main": [
+                [
+                    {
+                        "node": "Filtering Only For Sales Campaigns",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Filtering Only For Sales Campaigns": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate Metrics by Ad Creative",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Calculate Account Benchmarks",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate Metrics by Ad Creative": {
+            "main": [
+                [
+                    {
+                        "node": "Sorting Based on Spends",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Sorting Based on Spends": {
+            "main": [
+                [
+                    {
+                        "node": "Sending Raw Data To A Google Sheet",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Stringify Everything",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Stringify Everything": {
+            "main": [
+                [
+                    {
+                        "node": "Combining Ad Data and Benchmarking Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Calculate Account Benchmarks": {
+            "main": [
+                [
+                    {
+                        "node": "Stringify Benchmark Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Stringify Benchmark Data": {
+            "main": [
+                [
+                    {
+                        "node": "Combining Ad Data and Benchmarking Data",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Combining Ad Data and Benchmarking Data": {
+            "main": [
+                [
+                    {
+                        "node": "Combine Ad & Benchmark Data for LLM",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Combine Ad & Benchmark Data for LLM": {
+            "main": [
+                [
+                    {
+                        "node": "Senior Facebook Ads Media Buyer",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Senior Facebook Ads Media Buyer": {
+            "main": [
+                [
+                    {
+                        "node": "Split Out",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Out": {
+            "main": [
+                [
+                    {
+                        "node": "Updating Ad Insights Into Google Sheets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Senior Facebook Ads Media Buyer",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "tags": [
+        {
+            "name": "marketing"
+        },
+        {
+            "name": "ai"
+        }
+    ]
+}
