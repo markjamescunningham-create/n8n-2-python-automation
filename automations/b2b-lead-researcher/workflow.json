@@ -1,0 +1,506 @@
+{
+    "name": "B2B Lead Researcher",
+    "nodes": [
+        {
+            "id": "ed390722-64d9-41bc-8b25-3824e0cb041a",
+            "name": "Manual execution",
+            "type": "n8n-nodes-base.manualTrigger",
+            "position": [
+                -528,
+                32
+            ],
+            "parameters": {},
+            "typeVersion": 1
+        },
+        {
+            "id": "f36fb29f-0fbf-4808-9202-d4e10fe2ab9a",
+            "name": "Retrieve Input Data",
+            "type": "n8n-nodes-base.googleSheets",
+            "position": [
+                -368,
+                32
+            ],
+            "parameters": {
+                "options": {},
+                "sheetName": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gid=0",
+                    "cachedResultName": "DataBase"
+                },
+                "documentId": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "YOUR_SPREADSHEET_ID",
+                    "cachedResultName": "B2B Contact Research"
+                }
+            },
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets"
+                }
+            },
+            "typeVersion": 4.7
+        },
+        {
+            "id": "57d15707-3da2-4ea8-9fc8-9013ff05179c",
+            "name": "Loop Over Items",
+            "type": "n8n-nodes-base.splitInBatches",
+            "position": [
+                -176,
+                32
+            ],
+            "parameters": {
+                "options": {}
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "6a7374cc-93d2-4441-9573-4c30eaca6c0c",
+            "name": "Extract Target Page Data",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                0,
+                32
+            ],
+            "parameters": {
+                "url": "={{ $json['Page URL'] }}",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "text",
+                            "outputPropertyName": "content"
+                        }
+                    }
+                }
+            },
+            "typeVersion": 4.2
+        },
+        {
+            "id": "8119059d-5dd6-4f39-96f0-df002c610f65",
+            "name": "Analyze the Company Page",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                160,
+                32
+            ],
+            "parameters": {
+                "text": "={{ $json.content.substring(0, 8000) }}",
+                "options": {
+                    "systemMessage": "You are a Senior B2B Market Analyst. Analyse the following scraped page content.\n\nDetect whether it's 'News/Changelog' or 'Company Profile' and extract:\n- data_type: 'News' or 'Profile'\n- company_name\n- primary_date (YYYY-MM-DD)\n- core_summary (2-3 sentences)\n- key_entities (comma-separated)\n- strategic_focus (one sentence)\n\nReturn ONLY a valid JSON object."
+                },
+                "promptType": "define",
+                "hasOutputParser": true
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "e8fa3ab2-79ac-48d1-bb0b-7d8ded71ccae",
+            "name": "OpenRouter Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+            "position": [
+                160,
+                224
+            ],
+            "parameters": {
+                "model": "openai/gpt-4o",
+                "options": {}
+            },
+            "credentials": {
+                "openRouterApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenRouter account"
+                }
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "4e8bfa9a-d899-4436-8519-c2995a0bf231",
+            "name": "Update Database",
+            "type": "n8n-nodes-base.googleSheets",
+            "position": [
+                608,
+                192
+            ],
+            "parameters": {
+                "columns": {
+                    "value": {
+                        "Page URL": "={{ $('Loop Over Items').item.json['Page URL'] }}",
+                        "Page Data": "={{ $json.output }}",
+                        "row_number": "={{ $('Loop Over Items').item.json.row_number }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "Page URL",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "Page URL",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "Page Data",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "Page Data",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "row_number",
+                            "type": "number",
+                            "display": true,
+                            "removed": false,
+                            "readOnly": true,
+                            "required": false,
+                            "displayName": "row_number",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        }
+                    ],
+                    "mappingMode": "defineBelow",
+                    "matchingColumns": [
+                        "row_number"
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {},
+                "operation": "update",
+                "sheetName": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gid=0",
+                    "cachedResultName": "DataBase"
+                },
+                "documentId": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "YOUR_SPREADSHEET_ID",
+                    "cachedResultName": "B2B Contact Research"
+                }
+            },
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets"
+                }
+            },
+            "typeVersion": 4.7
+        },
+        {
+            "id": "d037a078-430e-48e6-aeab-c80ae8c12e5b",
+            "name": "Retrieve Stored Data",
+            "type": "n8n-nodes-base.googleSheets",
+            "position": [
+                128,
+                -416
+            ],
+            "parameters": {
+                "options": {},
+                "sheetName": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gid=0",
+                    "cachedResultName": "DataBase"
+                },
+                "documentId": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "YOUR_SPREADSHEET_ID",
+                    "cachedResultName": "B2B Contact Research"
+                }
+            },
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets"
+                }
+            },
+            "executeOnce": true,
+            "typeVersion": 4.7
+        },
+        {
+            "id": "a7630002-fbfa-47a7-873a-c313f0d5ec02",
+            "name": "Aggregate",
+            "type": "n8n-nodes-base.aggregate",
+            "position": [
+                304,
+                -416
+            ],
+            "parameters": {
+                "options": {},
+                "aggregate": "aggregateAllItemData"
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "f252c0f0-263a-45cb-8b47-b36879f40d37",
+            "name": "Analyze data and create an Airtable record",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                512,
+                -416
+            ],
+            "parameters": {
+                "text": "= array of data: {{ JSON.stringify($json.data, null, 2) }}",
+                "options": {
+                    "systemMessage": "You are an Expert B2B Lead Researcher. Synthesise the following page analyses for a single company into a single Airtable record.\n\nCreate:\n- Name: company name\n- Notes: Markdown with: Company Persona, Strategic Focus, Recent Activities, Key Tech\n- Attachment_Summary: 1-sentence executive bio\n\nReturn ONLY a valid JSON object with keys: Name, Notes, Attachment_Summary"
+                },
+                "promptType": "define",
+                "hasOutputParser": true
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "4e701483-b428-46c3-bc9d-49a929d3e7c5",
+            "name": "OpenRouter Chat Model1",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+            "position": [
+                496,
+                -192
+            ],
+            "parameters": {
+                "model": "openai/gpt-4o",
+                "options": {}
+            },
+            "credentials": {
+                "openRouterApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenRouter account"
+                }
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "ea6246f0-c50e-40f7-9d94-ffaa8ab1a56a",
+            "name": "Create a record",
+            "type": "n8n-nodes-base.airtable",
+            "position": [
+                864,
+                -416
+            ],
+            "parameters": {
+                "base": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "YOUR_AIRTABLE_BASE_ID",
+                    "cachedResultName": "B2B Research"
+                },
+                "table": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "YOUR_AIRTABLE_TABLE_ID",
+                    "cachedResultName": "Table 1"
+                },
+                "columns": {
+                    "value": {
+                        "Name": "={{ $json.output.Name }}",
+                        "Notes": "={{ $json.output.Notes }}",
+                        "Status": "Todo",
+                        "Attachment Summary": "={{ $json.output.Attachment_Summary }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "Name",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "Name",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "Notes",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "Notes",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "Status",
+                            "type": "options",
+                            "display": true,
+                            "required": false,
+                            "displayName": "Status",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "Attachment Summary",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "Attachment Summary",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        }
+                    ],
+                    "mappingMode": "defineBelow",
+                    "matchingColumns": [],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {
+                    "typecast": true
+                },
+                "operation": "create",
+                "authentication": "airtableOAuth2Api"
+            },
+            "credentials": {
+                "airtableOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Airtable"
+                }
+            },
+            "typeVersion": 2.1
+        }
+    ],
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "connections": {
+        "Manual execution": {
+            "main": [
+                [
+                    {
+                        "node": "Retrieve Input Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrieve Input Data": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Over Items": {
+            "main": [
+                [
+                    {
+                        "node": "Retrieve Stored Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Extract Target Page Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrieve Stored Data": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze data and create an Airtable record",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Target Page Data": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze the Company Page",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze the Company Page": {
+            "main": [
+                [
+                    {
+                        "node": "Update Database",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Database": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze data and create an Airtable record": {
+            "main": [
+                [
+                    {
+                        "node": "Create a record",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenRouter Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Analyze the Company Page",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenRouter Chat Model1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Analyze data and create an Airtable record",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "tags": [
+        {
+            "name": "ai"
+        },
+        {
+            "name": "tech"
+        }
+    ]
+}
