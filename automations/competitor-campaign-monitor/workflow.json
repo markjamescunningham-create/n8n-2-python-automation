@@ -1,0 +1,493 @@
+{
+    "name": "Competitor Campaign Monitor",
+    "nodes": [
+        {
+            "id": "sc001",
+            "name": "Schedule Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "position": [
+                -480,
+                80
+            ],
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "weeksInterval": 1,
+                            "triggerAtHour": 9
+                        }
+                    ]
+                }
+            },
+            "typeVersion": 1.2
+        },
+        {
+            "id": "sc002",
+            "name": "Extract the target URLs",
+            "type": "n8n-nodes-base.googleSheets",
+            "position": [
+                -272,
+                80
+            ],
+            "parameters": {
+                "options": {},
+                "sheetName": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gid=0",
+                    "cachedResultName": "Page URLs"
+                },
+                "documentId": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "YOUR_SPREADSHEET_ID",
+                    "cachedResultName": "Competitor Campaign Monitoring"
+                }
+            },
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets"
+                }
+            },
+            "typeVersion": 4.7
+        },
+        {
+            "id": "sc003",
+            "name": "Loop Over Items",
+            "type": "n8n-nodes-base.splitInBatches",
+            "position": [
+                -48,
+                80
+            ],
+            "parameters": {
+                "options": {}
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "sc004",
+            "name": "Scrape the target pages",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                160,
+                80
+            ],
+            "parameters": {
+                "url": "={{ $json['Page URL'] }}",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "text",
+                            "outputPropertyName": "content"
+                        }
+                    }
+                }
+            },
+            "typeVersion": 4.2
+        },
+        {
+            "id": "sc005",
+            "name": "Analyze the pages",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                368,
+                80
+            ],
+            "parameters": {
+                "text": "=Current Data: {{ $json.content.substring(0, 4000) }}\nPrevious Data: {{ $('Loop Over Items').item.json['Page Context'] }}",
+                "options": {
+                    "systemMessage": "You are a Competitor Intelligence Analyst. Compare Current vs Previous page data.\n\nOutput ONLY a valid JSON:\n{ \"page_context\": { \"summary\": \"...\" }, \"comparison_analysis\": { \"has_changes\": true/false, \"change_severity\": \"None|Low|High\", \"price_change\": { \"detected\": true/false, \"direction\": \"Increase|Decrease|Same\", \"difference_amount\": 0.00 }, \"content_changes\": [\"...\"], \"verdict\": \"...\" } }\n\nIf Previous Data is empty, mark as New Tracking Started."
+                },
+                "promptType": "define",
+                "hasOutputParser": true
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "sc006",
+            "name": "OpenRouter Chat Model",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+            "position": [
+                368,
+                280
+            ],
+            "parameters": {
+                "model": "openai/gpt-4o",
+                "options": {}
+            },
+            "credentials": {
+                "openRouterApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenRouter account"
+                }
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "sc007",
+            "name": "Update Database",
+            "type": "n8n-nodes-base.googleSheets",
+            "position": [
+                700,
+                272
+            ],
+            "parameters": {
+                "columns": {
+                    "value": {
+                        "Page URL": "={{ $('Loop Over Items').item.json['Page URL'] }}",
+                        "row_number": "={{ $('Loop Over Items').item.json.row_number }}",
+                        "Page Context": "={{ $json.output.page_context }}",
+                        "Comparison Analysis": "={{ $json.output.comparison_analysis }}"
+                    },
+                    "schema": [
+                        {
+                            "id": "Page URL",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "Page URL",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "Page Context",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "Page Context",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "Comparison Analysis",
+                            "type": "string",
+                            "display": true,
+                            "required": false,
+                            "displayName": "Comparison Analysis",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        },
+                        {
+                            "id": "row_number",
+                            "type": "number",
+                            "display": true,
+                            "removed": false,
+                            "readOnly": true,
+                            "required": false,
+                            "displayName": "row_number",
+                            "defaultMatch": false,
+                            "canBeUsedToMatch": true
+                        }
+                    ],
+                    "mappingMode": "defineBelow",
+                    "matchingColumns": [
+                        "row_number"
+                    ],
+                    "attemptToConvertTypes": false,
+                    "convertFieldsToString": false
+                },
+                "options": {},
+                "operation": "update",
+                "sheetName": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gid=0",
+                    "cachedResultName": "Page URLs"
+                },
+                "documentId": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "YOUR_SPREADSHEET_ID",
+                    "cachedResultName": "Competitor Campaign Monitoring"
+                }
+            },
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets"
+                }
+            },
+            "typeVersion": 4.7
+        },
+        {
+            "id": "sc008",
+            "name": "Retrieve database items",
+            "type": "n8n-nodes-base.googleSheets",
+            "position": [
+                544,
+                -336
+            ],
+            "parameters": {
+                "options": {},
+                "sheetName": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "gid=0",
+                    "cachedResultName": "Page URLs"
+                },
+                "documentId": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "YOUR_SPREADSHEET_ID",
+                    "cachedResultName": "Competitor Campaign Monitoring"
+                }
+            },
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets"
+                }
+            },
+            "executeOnce": true,
+            "typeVersion": 4.7
+        },
+        {
+            "id": "sc009",
+            "name": "Aggregate",
+            "type": "n8n-nodes-base.aggregate",
+            "position": [
+                720,
+                -336
+            ],
+            "parameters": {
+                "options": {},
+                "aggregate": "aggregateAllItemData"
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "sc010",
+            "name": "Analyze all the items and generate a report",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "position": [
+                928,
+                -336
+            ],
+            "parameters": {
+                "text": "=Input: {{ JSON.stringify($json.data, null, 2) }}",
+                "options": {
+                    "systemMessage": "You are a Senior Competitor Intelligence Reporter. Generate a Slack digest.\n\nOutput ONLY a JSON array: [{\"slack_text\": \"...\"}]\n\nFirst message: summary header. Subsequent messages: one per changed page (has_changes=true only).\nUse *bold*, 🔴 (High), 🟡 (Low), 🟢 (New). Keep each message under 1500 chars."
+                },
+                "promptType": "define",
+                "hasOutputParser": true
+            },
+            "typeVersion": 3
+        },
+        {
+            "id": "sc011",
+            "name": "OpenRouter Chat Model1",
+            "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+            "position": [
+                912,
+                -128
+            ],
+            "parameters": {
+                "model": "openai/gpt-4o",
+                "options": {}
+            },
+            "credentials": {
+                "openRouterApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenRouter account"
+                }
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "sc012",
+            "name": "Split out Slack messages",
+            "type": "n8n-nodes-base.splitOut",
+            "position": [
+                1232,
+                -336
+            ],
+            "parameters": {
+                "options": {},
+                "fieldToSplitOut": "output"
+            },
+            "typeVersion": 1
+        },
+        {
+            "id": "sc013",
+            "name": "Send a message",
+            "type": "n8n-nodes-base.slack",
+            "position": [
+                1424,
+                -336
+            ],
+            "parameters": {
+                "text": "={{ $json.slack_text }}",
+                "select": "channel",
+                "channelId": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": "YOUR_CHANNEL_ID",
+                    "cachedResultName": "competitor-intel"
+                },
+                "otherOptions": {}
+            },
+            "credentials": {
+                "slackApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Slack account"
+                }
+            },
+            "typeVersion": 2.4
+        }
+    ],
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "connections": {
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Extract the target URLs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract the target URLs": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Over Items": {
+            "main": [
+                [
+                    {
+                        "node": "Retrieve database items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Scrape the target pages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Scrape the target pages": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze the pages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze the pages": {
+            "main": [
+                [
+                    {
+                        "node": "Update Database",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update Database": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrieve database items": {
+            "main": [
+                [
+                    {
+                        "node": "Aggregate",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Aggregate": {
+            "main": [
+                [
+                    {
+                        "node": "Analyze all the items and generate a report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analyze all the items and generate a report": {
+            "main": [
+                [
+                    {
+                        "node": "Split out Slack messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split out Slack messages": {
+            "main": [
+                [
+                    {
+                        "node": "Send a message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenRouter Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Analyze the pages",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "OpenRouter Chat Model1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Analyze all the items and generate a report",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "tags": [
+        {
+            "name": "marketing"
+        },
+        {
+            "name": "tech"
+        }
+    ]
+}
