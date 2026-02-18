@@ -1,0 +1,138 @@
+{
+    "name": "Lead Enrichment & Routing System",
+    "nodes": [
+        {
+            "parameters": {
+                "path": "incoming-lead",
+                "responseMode": "lastNode",
+                "options": {}
+            },
+            "name": "Webhook (Lead Capture)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "command": "python /path/to/workflow.py '{{$json.body.email}}'"
+            },
+            "name": "Execute Python Script",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "boolean": [],
+                    "number": [
+                        {
+                            "value1": "={{$json.score}}",
+                            "operation": "largerEqual",
+                            "value2": 80
+                        }
+                    ]
+                }
+            },
+            "name": "Score Router IF",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                650,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "channel": "hot-leads",
+                "text": "=🔥 NEW HOT LEAD 🔥\nEmail: {{$json.email}}\nCompany: {{$json.company_name}}\nIndustry: {{$json.industry}}\nRole: {{$json.seniority}}\n\nAI Reason: {{$json.reason}}"
+            },
+            "name": "Slack (Hot Lead)",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 1,
+            "position": [
+                900,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "url": "={{$env.ACTIVECAMPAIGN_URL}}/api/3/contacts",
+                "method": "POST",
+                "bodyParametersUi": {
+                    "parameter": [
+                        {
+                            "name": "contact[email]",
+                            "value": "={{$json.email}}"
+                        }
+                    ]
+                },
+                "headerParametersUi": {
+                    "parameter": [
+                        {
+                            "name": "Api-Token",
+                            "value": "={{$env.ACTIVECAMPAIGN_API_KEY}}"
+                        }
+                    ]
+                }
+            },
+            "name": "Nurture Sequence",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                900,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook (Lead Capture)": {
+            "main": [
+                [
+                    {
+                        "node": "Execute Python Script",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute Python Script": {
+            "main": [
+                [
+                    {
+                        "node": "Score Router IF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Score Router IF": {
+            "main": [
+                [
+                    {
+                        "node": "Slack (Hot Lead)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Nurture Sequence",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {},
+    "versionId": "f9k8j7h6-1234-abcd-efgh-ijklmnopqrst"
+}
