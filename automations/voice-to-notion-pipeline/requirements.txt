@@ -1,0 +1,5 @@
+# Requirements for voice-to-notion-pipeline
+requests==2.31.0
+python-dotenv==1.0.1
+pydantic==2.6.3
+openai==1.13.3

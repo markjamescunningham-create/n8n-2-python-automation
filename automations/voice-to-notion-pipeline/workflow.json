@@ -1,0 +1,118 @@
+{
+    "name": "Voice to Notion Pipeline",
+    "nodes": [
+        {
+            "parameters": {
+                "updates": [
+                    "message"
+                ]
+            },
+            "name": "Telegram Trigger",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "filePropertyName": "data",
+                "options": {}
+            },
+            "name": "Download Audio",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "command": "python /path/to/workflow.py /tmp/audio_file.ogg"
+            },
+            "name": "Process Audio via Python",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "create",
+                "databaseId": {
+                    "__rl": true,
+                    "value": "={{$env.NOTION_DATABASE_ID}}",
+                    "mode": "id"
+                },
+                "propertiesUi": {
+                    "propertyValues": [
+                        {
+                            "key": "Name|title",
+                            "textContent": "={{$json.title}}"
+                        },
+                        {
+                            "key": "Type|select",
+                            "selectValue": "={{$json.category}}"
+                        },
+                        {
+                            "key": "Content|rich_text",
+                            "textContent": "={{$json.content}}"
+                        },
+                        {
+                            "key": "Tags|multi_select",
+                            "multiSelectValue": "={{$json.tags}}"
+                        }
+                    ]
+                }
+            },
+            "name": "Notion",
+            "type": "n8n-nodes-base.notion",
+            "typeVersion": 2,
+            "position": [
+                800,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Telegram Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Download Audio",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Download Audio": {
+            "main": [
+                [
+                    {
+                        "node": "Process Audio via Python",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Process Audio via Python": {
+            "main": [
+                [
+                    {
+                        "node": "Notion",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {},
+    "versionId": "v8m4b2n1-5678-qwer-tyui-opasdfghjklz"
+}
