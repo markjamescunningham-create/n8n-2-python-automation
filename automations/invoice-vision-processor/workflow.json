@@ -1,0 +1,101 @@
+{
+    "name": "Invoice Vision Pipeline",
+    "nodes": [
+        {
+            "parameters": {
+                "pollTimes": {
+                    "item": [
+                        {
+                            "mode": "everyMinute"
+                        }
+                    ]
+                },
+                "query": "is:unread has:attachment from:(*@vendor1.com OR *@vendor2.com)",
+                "downloadAttachments": true,
+                "options": {}
+            },
+            "name": "Gmail Trigger",
+            "type": "n8n-nodes-base.gmailTrigger",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "command": "python /path/to/workflow.py /tmp/attachment.pdf"
+            },
+            "name": "Extract Invoice Data via Python",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                450,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "append",
+                "application": "={{$env.AIRTABLE_BASE_ID}}",
+                "table": "={{$env.AIRTABLE_TABLE_NAME}}",
+                "columns": "Vendor,Amount,Due Date,Description,Status",
+                "options": {}
+            },
+            "name": "Airtable (Log Record)",
+            "type": "n8n-nodes-base.airtable",
+            "typeVersion": 1,
+            "position": [
+                700,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "upload",
+                "fileId": "={{$json.google_drive_folder_id}}",
+                "fileName": "={{$json.date}}_{{$json.vendor}}.pdf",
+                "binaryPropertyName": "attachment_0",
+                "options": {}
+            },
+            "name": "Google Drive (Archive)",
+            "type": "n8n-nodes-base.googleDrive",
+            "typeVersion": 2,
+            "position": [
+                700,
+                500
+            ]
+        }
+    ],
+    "connections": {
+        "Gmail Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Invoice Data via Python",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Invoice Data via Python": {
+            "main": [
+                [
+                    {
+                        "node": "Airtable (Log Record)",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Google Drive (Archive)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {},
+    "versionId": "b1a2c3d4-5678-abcd-9876-efghijk12345"
+}

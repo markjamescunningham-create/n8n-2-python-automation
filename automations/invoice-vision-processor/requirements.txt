@@ -1,0 +1,6 @@
+# Requirements for invoice-vision-processor
+requests==2.31.0
+python-dotenv==1.0.1
+pydantic==2.6.3
+openai==1.13.3
+PyMuPDF==1.23.21  # For converting PDF pages to images for Vision AI
