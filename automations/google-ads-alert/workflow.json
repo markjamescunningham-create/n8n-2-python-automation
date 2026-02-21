@@ -1,0 +1,219 @@
+{
+    "name": "Google Ads Alert",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": [
+                                1,
+                                2,
+                                3,
+                                4,
+                                5
+                            ],
+                            "triggerAtHour": 9
+                        }
+                    ]
+                }
+            },
+            "id": "1",
+            "name": "Weekdays at 09:00",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Returns yesterday's date as YYYY-MM-DD\nconst yesterday = new Date();\nyesterday.setDate(yesterday.getDate() - 1);\nconst dateStr = yesterday.toISOString().split('T')[0];\nreturn [{json: {report_date: dateStr}}];"
+            },
+            "id": "2",
+            "name": "Set Report Date",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://googleads.googleapis.com/v16/customers/{{ $vars.GOOGLE_ADS_CUSTOMER_ID }}/googleAds:searchStream",
+                "authentication": "genericCredentialType",
+                "genericAuthType": "oAuth2Api",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "developer-token",
+                            "value": "={{ $vars.GOOGLE_ADS_DEVELOPER_TOKEN }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "contentType": "json",
+                "body": "={\n  \"query\": \"SELECT campaign.id, campaign.name, campaign.status, metrics.impressions, metrics.clicks, metrics.cost_micros, metrics.conversions, segments.date FROM campaign WHERE segments.date = '{{ $json.report_date }}' AND campaign.status = 'ENABLED' ORDER BY metrics.cost_micros DESC\"\n}",
+                "options": {}
+            },
+            "id": "3",
+            "name": "Query Google Ads API",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                720,
+                300
+            ],
+            "credentials": {
+                "oAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Ads OAuth2"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const CPA_THRESHOLD = parseFloat($vars.CPA_THRESHOLD_USD || '50');\nconst CPC_THRESHOLD = parseFloat($vars.CPC_THRESHOLD_USD || '5');\n\nconst results = [];\nfor (const chunk of $input.all()) {\n  for (const result of chunk.json.results || []) {\n    const c = result.campaign || {};\n    const m = result.metrics  || {};\n    const s = result.segments || {};\n\n    const costUsd    = parseInt(m.costMicros || 0) / 1_000_000;\n    const clicks     = parseInt(m.clicks || 0);\n    const convs      = parseFloat(m.conversions || 0);\n    const cpc        = clicks  ? +(costUsd / clicks).toFixed(2)  : 0;\n    const cpa        = convs   ? +(costUsd / convs).toFixed(2)   : 0;\n\n    const reasons = [];\n    if (cpa && cpa > CPA_THRESHOLD) reasons.push(`CPA $${cpa.toFixed(2)} > $${CPA_THRESHOLD}`);\n    if (cpc && cpc > CPC_THRESHOLD) reasons.push(`CPC $${cpc.toFixed(2)} > $${CPC_THRESHOLD}`);\n\n    results.push({\n      json: {\n        campaign_id:   c.id,\n        campaign_name: c.name,\n        date:          s.date,\n        cost_usd:      +costUsd.toFixed(2),\n        clicks,\n        conversions:   convs,\n        cpc_usd:       cpc,\n        cpa_usd:       cpa,\n        alert_reasons: reasons,\n        is_flagged:    reasons.length > 0\n      }\n    });\n  }\n}\nreturn results;"
+            },
+            "id": "4",
+            "name": "Compute Metrics & Flag",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                960,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "leftValue": "={{ $json.is_flagged }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                }
+            },
+            "id": "5",
+            "name": "Any Over Threshold?",
+            "type": "n8n-nodes-base.filter",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "select": "channel",
+                "channelId": {
+                    "__rl": true,
+                    "value": "#marketing-alerts",
+                    "mode": "name"
+                },
+                "text": "=🚨 *Google Ads Alert — {{ $json.date }}*\n\n• *{{ $json.campaign_name }}* — {{ $json.alert_reasons.join(' | ') }}\n  Spend: ${{ $json.cost_usd }} | Clicks: {{ $json.clicks }} | Conversions: {{ $json.conversions }}",
+                "otherOptions": {}
+            },
+            "id": "6",
+            "name": "Send Slack Alert",
+            "type": "n8n-nodes-base.slack",
+            "typeVersion": 2.2,
+            "position": [
+                1440,
+                300
+            ],
+            "credentials": {
+                "slackApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Slack account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Weekdays at 09:00": {
+            "main": [
+                [
+                    {
+                        "node": "Set Report Date",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Report Date": {
+            "main": [
+                [
+                    {
+                        "node": "Query Google Ads API",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Query Google Ads API": {
+            "main": [
+                [
+                    {
+                        "node": "Compute Metrics & Flag",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Compute Metrics & Flag": {
+            "main": [
+                [
+                    {
+                        "node": "Any Over Threshold?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Any Over Threshold?": {
+            "main": [
+                [
+                    {
+                        "node": "Send Slack Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": [
+        {
+            "name": "marketing"
+        },
+        {
+            "name": "paid-ads"
+        }
+    ],
+    "notes": "Set your Google Ads OAuth2 credential and Slack credential before activating. Configure CPA_THRESHOLD_USD and CPC_THRESHOLD_USD as n8n variables or edit the Filter node thresholds directly. Set GOOGLE_ADS_CUSTOMER_ID in n8n variables (numbers only, no hyphens)."
+}

@@ -1,0 +1,151 @@
+{
+    "name": "Email Performance Reporter",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "weeks",
+                            "triggerAtDay": [
+                                1
+                            ],
+                            "triggerAtHour": 8
+                        }
+                    ]
+                }
+            },
+            "id": "1",
+            "name": "Every Monday 08:00",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "resource": "campaign",
+                "returnAll": false,
+                "limit": "={{ $vars.CAMPAIGN_LIMIT || 10 }}",
+                "filters": {
+                    "status": "sent"
+                },
+                "options": {
+                    "sortField": "send_time",
+                    "sortDirection": "DESC"
+                }
+            },
+            "id": "2",
+            "name": "Get Mailchimp Campaigns",
+            "type": "n8n-nodes-base.mailchimp",
+            "typeVersion": 1,
+            "position": [
+                480,
+                300
+            ],
+            "credentials": {
+                "mailchimpApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Mailchimp account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const items = $input.all();\nreturn items.map(item => {\n  const c = item.json;\n  const r = c.report_summary || {};\n  const recipients = r.subscriber_count || 0;\n  const opens      = r.unique_opens    || 0;\n  const clicks     = r.unique_clicks   || 0;\n  const unsubs     = r.unsubscribed    || 0;\n\n  return {\n    json: {\n      campaign_id:            c.id,\n      subject_line:           (c.settings || {}).subject_line || '',\n      send_time:              c.send_time || '',\n      recipients:             recipients,\n      opens:                  opens,\n      clicks:                 clicks,\n      unsubscribes:           unsubs,\n      open_rate_pct:          recipients ? +(opens  / recipients * 100).toFixed(2) : 0,\n      click_rate_pct:         recipients ? +(clicks / recipients * 100).toFixed(2) : 0,\n      unsubscribe_rate_pct:   recipients ? +(unsubs / recipients * 100).toFixed(2) : 0,\n      retrieved_at:           new Date().toISOString()\n    }\n  };\n});"
+            },
+            "id": "3",
+            "name": "Compute Metrics",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                720,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "appendOrUpdate",
+                "documentId": {
+                    "__rl": true,
+                    "value": "YOUR_SPREADSHEET_ID",
+                    "mode": "id"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "Email Performance",
+                    "mode": "name"
+                },
+                "columns": {
+                    "mappingMode": "autoMapInputData",
+                    "value": {}
+                }
+            },
+            "id": "4",
+            "name": "Append to Google Sheets",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.5,
+            "position": [
+                960,
+                300
+            ],
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Every Monday 08:00": {
+            "main": [
+                [
+                    {
+                        "node": "Get Mailchimp Campaigns",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Mailchimp Campaigns": {
+            "main": [
+                [
+                    {
+                        "node": "Compute Metrics",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Compute Metrics": {
+            "main": [
+                [
+                    {
+                        "node": "Append to Google Sheets",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": [
+        {
+            "name": "marketing"
+        },
+        {
+            "name": "email"
+        }
+    ],
+    "notes": "Set your Mailchimp and Google Sheets credentials before activating. Update YOUR_SPREADSHEET_ID to your target sheet. The 'Email Performance' sheet tab must already exist with headers matching the field names output by the Compute Metrics node."
+}

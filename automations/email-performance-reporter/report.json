@@ -1,0 +1,28 @@
+[
+  {
+    "campaign_id": "camp_001",
+    "subject_line": "March newsletter \ud83c\udf89",
+    "send_time": "2024-03-11T08:00:00+00:00",
+    "recipients": 1000,
+    "opens": 450,
+    "clicks": 80,
+    "unsubscribes": 5,
+    "open_rate_pct": 45.0,
+    "click_rate_pct": 8.0,
+    "unsubscribe_rate_pct": 0.5,
+    "retrieved_at": "2026-02-21T20:32:46.028624+00:00"
+  },
+  {
+    "campaign_id": "camp_002",
+    "subject_line": "Empty report campaign",
+    "send_time": "2024-03-04T08:00:00+00:00",
+    "recipients": 0,
+    "opens": 0,
+    "clicks": 0,
+    "unsubscribes": 0,
+    "open_rate_pct": 0.0,
+    "click_rate_pct": 0.0,
+    "unsubscribe_rate_pct": 0.0,
+    "retrieved_at": "2026-02-21T20:32:46.028640+00:00"
+  }
+]

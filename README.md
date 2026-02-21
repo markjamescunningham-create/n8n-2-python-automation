@@ -26,14 +26,15 @@ Some of these are polished. Some are still rough around the edges — I've noted
 ```
 automations/
 └── <automation-name>/
-    ├── README.md        # What it does, setup, known issues
-    ├── workflow.json    # n8n export — import directly
-    ├── workflow.py      # Python equivalent
-    ├── .env.example     # Environment variable template
+    ├── README.md           # What it does, setup, known issues
+    ├── workflow.json       # n8n export — import directly
+    ├── workflow.py         # Python equivalent
+    ├── test_workflow.py    # Offline unit tests using unittest/pytest
+    ├── .env.example        # Environment variable template
     └── requirements.txt
 
 templates/
-└── automation-template/  # Boilerplate for new additions
+└── automation-template/    # Boilerplate for new additions
 ```
 
 ---
@@ -52,6 +53,13 @@ cd automations/<automation-name>
 pip install -r requirements.txt
 cp .env.example .env   # fill in your keys
 python workflow.py
+```
+
+### Testing
+```bash
+cd automations/<automation-name>
+pip install -r requirements.txt
+python -m pytest test_workflow.py -v
 ```
 
 ---
@@ -74,6 +82,10 @@ python workflow.py
 | [facebook-ad-ai-analyser](automations/facebook-ad-ai-analyser/) | AI / Marketing | Score ad creatives against account benchmarks with Gemini |
 | [b2b-lead-researcher](automations/b2b-lead-researcher/) | AI / Tech | Scrape company pages, synthesise into Airtable CRM records |
 | [competitor-campaign-monitor](automations/competitor-campaign-monitor/) | Marketing / Tech | Weekly Slack digest of competitor page changes |
+| [email-performance-reporter](automations/email-performance-reporter/) | Marketing | Pull Mailchimp campaign stats and log to Google Sheets weekly |
+| [google-ads-alert](automations/google-ads-alert/) | Marketing | Flag campaigns where CPA or CPC exceeds threshold, alert via Slack |
+| [seo-content-brief-generator](automations/seo-content-brief-generator/) | AI / Marketing | Keyword → SERP research → OpenAI → structured content brief |
+| [meeting-action-extractor](automations/meeting-action-extractor/) | AI / General | Parse a meeting transcript and extract structured action items to CSV or Notion |
 
 ---
 

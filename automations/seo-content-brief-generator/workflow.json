@@ -1,0 +1,220 @@
+{
+    "name": "SEO Content Brief Generator",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "seo-brief",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "1",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                300
+            ],
+            "webhookId": "seo-brief-webhook"
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "https://serpapi.com/search",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "engine",
+                            "value": "google"
+                        },
+                        {
+                            "name": "q",
+                            "value": "={{ $json.body.keyword }}"
+                        },
+                        {
+                            "name": "num",
+                            "value": "10"
+                        },
+                        {
+                            "name": "gl",
+                            "value": "us"
+                        },
+                        {
+                            "name": "hl",
+                            "value": "en"
+                        },
+                        {
+                            "name": "api_key",
+                            "value": "={{ $vars.SERPAPI_KEY }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "2",
+            "name": "Fetch SERP Results",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const keyword  = $('Webhook').first().json.body.keyword;\nconst organic  = $input.first().json.organic_results || [];\nconst top10    = organic.slice(0, 10);\n\nconst serpSummary = top10\n  .map(r => `${r.position}. ${r.title}\\n   ${r.snippet || ''}`)\n  .join('\\n');\n\nreturn [{\n  json: {\n    keyword,\n    serp_results: top10.map(r => ({position: r.position, title: r.title, link: r.link, snippet: r.snippet})),\n    serp_summary: serpSummary\n  }\n}];"
+            },
+            "id": "3",
+            "name": "Prepare Prompt Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                720,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4o-mini",
+                    "mode": "list"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "You are an expert SEO content strategist. Given a target keyword and top SERP results, produce a structured content brief as JSON with these fields: recommended_title, meta_description (max 160 chars), target_word_count, primary_keyword, secondary_keywords (array), content_angle, outline (array of {heading, subheadings[]}), key_topics_to_cover (array), things_to_avoid (array). Return only valid JSON."
+                        },
+                        {
+                            "role": "user",
+                            "content": "=Target keyword: {{ $json.keyword }}\n\nTop SERP results:\n{{ $json.serp_summary }}\n\nGenerate a content brief for a new article that should outrank these results."
+                        }
+                    ]
+                },
+                "options": {
+                    "responseFormat": "json_object",
+                    "temperature": 0.4
+                }
+            },
+            "id": "4",
+            "name": "Generate Brief (OpenAI)",
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.4,
+            "position": [
+                960,
+                300
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const brief       = JSON.parse($input.first().json.message.content);\nconst serpResults = $('Prepare Prompt Data').first().json.serp_results;\nconst keyword     = $('Prepare Prompt Data').first().json.keyword;\n\nreturn [{ json: { keyword, brief, serp_results: serpResults } }];"
+            },
+            "id": "5",
+            "name": "Parse & Combine",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                1200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify($json) }}",
+                "options": {}
+            },
+            "id": "6",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1440,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch SERP Results",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch SERP Results": {
+            "main": [
+                [
+                    {
+                        "node": "Prepare Prompt Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Prepare Prompt Data": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Brief (OpenAI)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Brief (OpenAI)": {
+            "main": [
+                [
+                    {
+                        "node": "Parse & Combine",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse & Combine": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": [
+        {
+            "name": "marketing"
+        },
+        {
+            "name": "ai"
+        },
+        {
+            "name": "seo"
+        }
+    ],
+    "notes": "Trigger with POST /webhook/seo-brief with body {\"keyword\": \"your keyword\"}. Set SERPAPI_KEY and OpenAI credentials before activating. To run on a schedule instead of webhook, replace the Webhook trigger with a Schedule Trigger and pull keywords from a Google Sheet."
+}

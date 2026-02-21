@@ -1,0 +1,18 @@
+{
+  "date": "2026-02-20",
+  "campaigns": [
+    {
+      "campaign_id": "111",
+      "campaign_name": "Brand",
+      "status": "ENABLED",
+      "date": "2024-03-10",
+      "impressions": 10000,
+      "clicks": 50,
+      "cost_usd": 0.1,
+      "conversions": 10.0,
+      "cpc_usd": 0.0,
+      "cpa_usd": 0.01
+    }
+  ],
+  "flagged": []
+}

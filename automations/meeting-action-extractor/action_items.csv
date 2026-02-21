@@ -1,0 +1,7 @@
+owner,task,due_date,priority,context,extracted_at
+Mark,Send the Q1 report to the board,2024-03-15,High,Alice asked Mark to send the Q1 report to the board by Friday.,2026-02-21T20:33:07.999181
+Sarah,Set up the demo environment for the client call,2024-03-19,Low,Sarah needs to set up the demo environment before next Tuesday.,2026-02-21T20:33:07.999181
+Bob,Follow up with vendor about the contract,,Medium,Bob to follow up with the vendor; no deadline set.,2026-02-21T20:33:07.999181
+Mark,Send the Q1 report to the board,2024-03-15,High,Alice asked Mark to send the Q1 report to the board by Friday.,2026-02-21T20:33:45.408055+00:00
+Sarah,Set up the demo environment for the client call,2024-03-19,Low,Sarah needs to set up the demo environment before next Tuesday.,2026-02-21T20:33:45.408055+00:00
+Bob,Follow up with vendor about the contract,,Medium,Bob to follow up with the vendor; no deadline set.,2026-02-21T20:33:45.408055+00:00

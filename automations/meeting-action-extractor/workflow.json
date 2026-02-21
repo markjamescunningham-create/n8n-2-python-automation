@@ -1,0 +1,250 @@
+{
+    "name": "Meeting Action Extractor",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "meeting-actions",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "1",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                300
+            ],
+            "webhookId": "meeting-actions-webhook"
+        },
+        {
+            "parameters": {
+                "resource": "chat",
+                "model": {
+                    "__rl": true,
+                    "value": "gpt-4o-mini",
+                    "mode": "list"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "You are an executive assistant analysing meeting transcripts. Extract every action item mentioned and return a JSON object with a single key \"action_items\" containing an array. Each item must have: owner (string), task (string), due_date (ISO 8601 string or null), priority (\"High\"/\"Medium\"/\"Low\"), context (string). Return only valid JSON."
+                        },
+                        {
+                            "role": "user",
+                            "content": "=Meeting transcript:\n\n{{ $json.body.transcript }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "responseFormat": "json_object",
+                    "temperature": 0.2
+                }
+            },
+            "id": "2",
+            "name": "Extract Action Items (OpenAI)",
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.4,
+            "position": [
+                480,
+                300
+            ],
+            "credentials": {
+                "openAiApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "OpenAI account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "const parsed   = JSON.parse($input.first().json.message.content);\nconst items    = parsed.action_items || parsed.items || parsed || [];\nconst now      = new Date().toISOString();\n\nreturn items.map(item => ({\n  json: {\n    ...item,\n    extracted_at: now\n  }\n}));"
+            },
+            "id": "3",
+            "name": "Parse Items",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                720,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "appendOrUpdate",
+                "documentId": {
+                    "__rl": true,
+                    "value": "YOUR_SPREADSHEET_ID",
+                    "mode": "id"
+                },
+                "sheetName": {
+                    "__rl": true,
+                    "value": "Action Items",
+                    "mode": "name"
+                },
+                "columns": {
+                    "mappingMode": "autoMapInputData",
+                    "value": {}
+                },
+                "options": {}
+            },
+            "id": "4",
+            "name": "Append to Google Sheets",
+            "type": "n8n-nodes-base.googleSheets",
+            "typeVersion": 4.5,
+            "position": [
+                960,
+                200
+            ],
+            "credentials": {
+                "googleSheetsOAuth2Api": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Google Sheets account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "databasePage",
+                "operation": "create",
+                "databaseId": {
+                    "__rl": true,
+                    "value": "YOUR_NOTION_DB_ID",
+                    "mode": "id"
+                },
+                "title": "={{ $json.task }}",
+                "propertiesUi": {
+                    "propertyValues": [
+                        {
+                            "key": "Owner",
+                            "type": "richText",
+                            "textValue": "={{ $json.owner }}"
+                        },
+                        {
+                            "key": "Priority",
+                            "type": "select",
+                            "selectValue": "={{ $json.priority }}"
+                        },
+                        {
+                            "key": "Context",
+                            "type": "richText",
+                            "textValue": "={{ $json.context }}"
+                        },
+                        {
+                            "key": "Due Date",
+                            "type": "date",
+                            "dateValue": "={{ $json.due_date }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "5",
+            "name": "Create Notion Task",
+            "type": "n8n-nodes-base.notion",
+            "typeVersion": 2.2,
+            "position": [
+                960,
+                400
+            ],
+            "credentials": {
+                "notionApi": {
+                    "id": "YOUR_CREDENTIAL_ID",
+                    "name": "Notion account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={{ JSON.stringify({items: $('Parse Items').all().map(i => i.json)}) }}",
+                "options": {}
+            },
+            "id": "6",
+            "name": "Respond",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1200,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Action Items (OpenAI)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Action Items (OpenAI)": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Items": {
+            "main": [
+                [
+                    {
+                        "node": "Append to Google Sheets",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Create Notion Task",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Append to Google Sheets": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Notion Task": {
+            "main": [
+                [
+                    {
+                        "node": "Respond",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": [
+        {
+            "name": "ai"
+        },
+        {
+            "name": "productivity"
+        }
+    ],
+    "notes": "POST to /webhook/meeting-actions with body {\"transcript\": \"...\"}. Set OpenAI, Google Sheets, and Notion credentials before activating. The Notion database must have: Name (title), Owner (text), Priority (select: High/Medium/Low), Context (text), Due Date (date). Remove either the Sheets or Notion node if you only need one output."
+}
