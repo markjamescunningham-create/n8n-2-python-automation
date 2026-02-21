@@ -1,10 +1,27 @@
 # n8n Automation Library
 
+[![Python Tests](https://github.com/USERNAME/REPO_NAME/actions/workflows/python-tests.yml/badge.svg)](https://github.com/USERNAME/REPO_NAME/actions/workflows/python-tests.yml)
+
 I spend a lot of time in n8n and Python building automations for marketing and ops work — things that used to take me (or my clients) hours every week. This repo is where I keep the ones worth keeping.
 
-Everything here is dual-format: an **n8n workflow JSON** you can import and run in minutes, and an equivalent **Python script** for people who'd rather just run a file. Both do the same job.
+### Why Dual-Format?
+Everything here is dual-format: an **n8n workflow JSON** you can import and run in minutes, and an equivalent **Python script** for people who'd rather just run a file headlessly on a cron job or test it locally. Both do the same job. By building modularly, individual automations can be snapped together to form larger "Systems":
 
-No grand ambitions here. Just a place to stop rebuilding the same stuff from scratch.
+```mermaid
+graph LR
+  subgraph Chain 1: Sales
+    A[Incoming Lead] --> B[Clearbit Enrichment]
+    B --> C{AI Score > 80}
+    C -->|Yes| D[Slack Hot Lead]
+    C -->|No| E[ActiveCampaign Nurture]
+  end
+  
+  subgraph Chain 2: Marketing
+    F[Voice App] --> G[Whisper Transcription]
+    G --> H[GPT Structuring]
+    H --> I[Notion DB Table]
+  end
+```
 
 ---
 
@@ -86,6 +103,9 @@ python -m pytest test_workflow.py -v
 | [google-ads-alert](automations/google-ads-alert/) | Marketing | Flag campaigns where CPA or CPC exceeds threshold, alert via Slack |
 | [seo-content-brief-generator](automations/seo-content-brief-generator/) | AI / Marketing | Keyword → SERP research → OpenAI → structured content brief |
 | [meeting-action-extractor](automations/meeting-action-extractor/) | AI / General | Parse a meeting transcript and extract structured action items to CSV or Notion |
+| [lead-enrichment-router](automations/lead-enrichment-router/) | Sales | Enrich emails via Clearbit, AI score them, and route hot leads to Slack |
+| [voice-to-notion-pipeline](automations/voice-to-notion-pipeline/) | Productivity | Transcribe Telegram voice notes with Whisper and log structured ideas into Notion |
+| [invoice-vision-processor](automations/invoice-vision-processor/) | Operations | Rip PDF attachments, use Vision AI to extract line items, log to Airtable |
 
 ---
 

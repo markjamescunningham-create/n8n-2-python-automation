@@ -1,0 +1,39 @@
+name: Python Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+        cache: 'pip'
+        
+    - name: Install Pytest
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest requests python-dotenv pydantic openai
+        
+    - name: Run Tests (All Automations)
+      # This finds all test_workflow.py files inside the automations directory
+      # and runs them. External APIs should be mocked in these files.
+      run: |
+        for dir in automations/*/; do
+          if [ -d "$dir" ] && [ -f "${dir}test_workflow.py" ]; then
+            echo "Running tests in $dir"
+            # Install specific requirements if they exist for this automation
+            if [ -f "${dir}requirements.txt" ]; then
+              pip install -r "${dir}requirements.txt"
+            fi
+            python -m pytest "${dir}test_workflow.py" -v
+          fi
+        done
