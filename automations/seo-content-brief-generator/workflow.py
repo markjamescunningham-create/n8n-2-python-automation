@@ -146,6 +146,7 @@ def save_brief(keyword: str, brief: dict, serp_results: list[dict]) -> str:
     secondary = ", ".join(brief.get("secondary_keywords", []))
     topics    = "\n".join(f"- {t}" for t in brief.get("key_topics_to_cover", []))
     avoid     = "\n".join(f"- {a}" for a in brief.get("things_to_avoid", []))
+    serp_rows = "".join(f"| {r['position']} | {r['title']} | {r['link']} |\n" for r in serp_results)
 
     content = f"""# Content Brief: {brief.get('recommended_title', keyword)}
 
@@ -175,7 +176,7 @@ def save_brief(keyword: str, brief: dict, serp_results: list[dict]) -> str:
 
 | # | Title | URL |
 |---|-------|-----|
-{"".join(f"| {r['position']} | {r['title']} | {r['link']} |\n" for r in serp_results)}
+{serp_rows}
 """
     with open(filepath, "w") as f:
         f.write(content)
