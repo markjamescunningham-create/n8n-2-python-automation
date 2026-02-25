@@ -44,3 +44,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Local AI Workflows & Scripts (Keep secret)
+.agents/
+.scripts/
